@@ -10,7 +10,7 @@
 set -euo pipefail
 
 VERSION="${1:-latest}"
-REPO="CarlosEduJs/SCAL-P"
+REPO="scal-p-labs/SCAL-P"
 PROJECT="scalp"
 
 # ── Logging helpers (GitHub Actions annotations) ──────────────────────────
