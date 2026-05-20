@@ -49,7 +49,7 @@ info "Platform: $OS/$ARCH"
 # ── Version resolution (redirect-based, no JSON parsing) ──────────────────
 if [ "$VERSION" = "latest" ]; then
   info "Resolving latest release..."
-  redirect=$(curl -sfL -o /dev/null -w '%{redirect_url}' \
+  redirect=$(curl -sfL -o /dev/null -w '%{url_effective}' \
     "https://github.com/$REPO/releases/latest" 2>/dev/null) \
     || die "failed to resolve latest version"
   VERSION="${redirect##*/}"
