@@ -1,10 +1,10 @@
 # scalp-action — SCAL-P GitHub Action
 
-> Run [SCAL-P](https://github.com/CarlosEduJs/SCAL-P) CI in your GitHub workflows —
+> Run [SCAL-P](https://github.com/scal-p-labs/SCAL-P) CI in your GitHub workflows —
 > enforce policy, verify dependency hashes, and audit your JavaScript project with zero config.
 
 ```yaml
-- uses: CarlosEduJs/scalp-action@v1
+- uses: scal-p-labs/scalp-action@v1
 ```
 
 ---
@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-      - uses: CarlosEduJs/scalp-action@v1
+      - uses: scal-p-labs/scalp-action@v1
         with:
           version: latest
           pm: npm
@@ -36,7 +36,7 @@ jobs:
 ### With custom policy
 
 ```yaml
-- uses: CarlosEduJs/scalp-action@v1
+- uses: scal-p-labsscalp-action@v1
   with:
     policy: .scalp/policy.json
     output: .scalp/ci-report.json
@@ -46,7 +46,7 @@ jobs:
 ### Using the report output
 
 ```yaml
-- uses: CarlosEduJs/scalp-action@v1
+- uses: scal-p-labsscalp-action@v1
   id: scalp
   with:
     pm: pnpm
@@ -84,7 +84,7 @@ jobs:
 ## How it works
 
 1. The action detects the runner OS and architecture (linux/macos/windows × amd64/arm64)
-2. Downloads the matching `scalp` binary from the [SCAL-P releases](https://github.com/CarlosEduJs/SCAL-P/releases)
+2. Downloads the matching `scalp` binary from the [SCAL-P releases](https://github.com/scal-p-labsSCAL-P/releases)
 3. Runs `scalp ci` with the provided inputs
 4. Exits with the same status as `scalp ci` — fail on policy violations or hash mismatches
 
@@ -103,7 +103,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-      - uses: CarlosEduJs/scalp-action@v1
+      - uses: scal-p-labsscalp-action@v1
 ```
 
 ### Multi-package manager matrix
@@ -115,7 +115,7 @@ strategy:
 steps:
   - uses: actions/checkout@v4
   - uses: actions/setup-node@v4
-  - uses: CarlosEduJs/scalp-action@v1
+  - uses: scal-p-labsscalp-action@v1
     with:
       pm: ${{ matrix.pm }}
       pr-context: fork
