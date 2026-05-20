@@ -4,7 +4,7 @@
 > enforce policy, verify dependency hashes, and audit your JavaScript project with zero config.
 
 ```yaml
-- uses: scal-p-labs/scalp-action@v1
+- uses: scal-p-labs/scalp-action@<SHA_COMMIT>
 ```
 
 ---
@@ -24,9 +24,9 @@ jobs:
   scalp-ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-      - uses: scal-p-labs/scalp-action@v1
+      - uses: actions/checkout@<SHA_COMMIT>
+      - uses: actions/setup-node@<SHA_COMMIT>
+      - uses: scal-p-labs/scalp-action@<SHA_COMMIT>
         with:
           version: latest
           pm: npm
@@ -36,7 +36,7 @@ jobs:
 ### With custom policy
 
 ```yaml
-- uses: scal-p-labsscalp-action@v1
+- uses: scal-p-labs/scalp-action@<SHA_COMMIT>
   with:
     policy: .scalp/policy.json
     output: .scalp/ci-report.json
@@ -46,13 +46,13 @@ jobs:
 ### Using the report output
 
 ```yaml
-- uses: scal-p-labsscalp-action@v1
+- uses: scal-p-labs/scalp-action@<SHA_COMMIT>
   id: scalp
   with:
     pm: pnpm
 
 - name: Upload CI report
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@<SHA_COMMIT>
   with:
     name: scalp-report
     path: ${{ steps.scalp.outputs.report-path }}
@@ -101,9 +101,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-      - uses: scal-p-labsscalp-action@v1
+      - uses: actions/checkout@<SHA_COMMIT>
+      - uses: actions/setup-node@<SHA_COMMIT>
+      - uses: scal-p-labs/scalp-action@<SHA_COMMIT>
 ```
 
 ### Multi-package manager matrix
@@ -113,12 +113,28 @@ strategy:
   matrix:
     pm: [npm, pnpm, yarn, bun]
 steps:
-  - uses: actions/checkout@v4
-  - uses: actions/setup-node@v4
-  - uses: scal-p-labsscalp-action@v1
+  - uses: actions/checkout@<SHA_COMMIT>
+  - uses: actions/setup-node@<SHA_COMMIT>
+  - uses: scal-p-labs/scalp-action@<SHA_COMMIT>
     with:
       pm: ${{ matrix.pm }}
       pr-context: fork
+```
+
+---
+
+## Why SHA pinning?
+
+You'll notice this action pins all its internal dependencies by commit SHA (e.g., `actions/checkout@11bd719...`) instead of by semver tag (`@v4`). This is a supply-chain security practice:
+
+- **Tags are mutable** — a maintainer account compromise can move a tag to a different commit, injecting malicious code into your workflow without changing the version number.
+- **SHAs are immutable** — a commit hash uniquely identifies the exact code that was reviewed and approved. No tag move can change what runs.
+- **Renovate / Dependabot** still work: they update the SHA when a new version is released, and the PR diff shows exactly what code changed.
+
+The principle applies to your own usage too: pin `scalp-action` by commit SHA in your workflows, and let Renovate or Dependabot manage updates.
+
+```yaml
+- uses: scal-p-labs/scalp-action@a1b2c3d4e5f6...
 ```
 
 ---
