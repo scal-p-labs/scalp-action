@@ -89,18 +89,16 @@ case "$magic" in
 esac
 
 # ── Checksum verification via SHA-512 ─────────────────────────────────────
+# SCAL-P's checksums.txt uses the format "sha512-<base64>" (not hex).
 verify_sha512() {
   local file="$1" expected="$2"
   local computed=""
 
-  if   command -v sha512sum &>/dev/null; then
-    computed=$(sha512sum "$file" | awk '{print $1}')
-  elif command -v shasum &>/dev/null; then
-    computed=$(shasum -a 512 "$file" | awk '{print $1}')
-  elif command -v openssl &>/dev/null; then
-    computed=$(openssl dgst -sha512 "$file" | awk '{print $NF}')
+  if command -v openssl &>/dev/null; then
+    computed=$(openssl dgst -sha512 -binary "$file" | base64 | tr -d '\n')
+    computed="sha512-${computed}"
   else
-    warn "no SHA-512 tool available; skipping checksum verification"
+    warn "openssl not available; skipping checksum verification"
     return 0
   fi
 
