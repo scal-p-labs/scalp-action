@@ -65,7 +65,10 @@ else
   ext="tar.gz"
   binary_ext=""
 fi
-ASSET="${PROJECT}_${VERSION}_${OS}_${ARCH}.${ext}"
+# GoReleaser strips the 'v' prefix from {{.Version}}, so asset names
+# use "0.2.19" even when the tag is "v0.2.19".
+ASSET_VERSION="${VERSION#v}"
+ASSET="${PROJECT}_${ASSET_VERSION}_${OS}_${ARCH}.${ext}"
 BINARY="${PROJECT}${binary_ext}"
 BASE_URL="https://github.com/$REPO/releases/download/$VERSION"
 
