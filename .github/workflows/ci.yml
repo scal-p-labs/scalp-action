@@ -23,14 +23,27 @@ jobs:
     needs: validate
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: scalp-action
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: scal-p-labs/SCAL-P
+          path: SCAL-P
+      - uses: actions/setup-go@f111f3307d8850f501ac00838988667abcee32b9 # v6.5.1
+        with:
+          go-version: "1.26"
+          cache: true
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
+      - name: Build scalp from source
+        working-directory: SCAL-P
+        run: make build
+      - name: Install scalp binary to PATH
+        run: cp SCAL-P/.bin/scal-p /usr/local/bin/scalp
       - name: Generate lockfile
-        working-directory: test/fixture
+        working-directory: scalp-action/test/fixture
         run: npm install --package-lock-only
-      - name: Run scalp-action on test fixture
-        uses: ./
-        with:
-          version: latest
-          working-directory: test/fixture
+      - name: Run scalp ci on test fixture
+        working-directory: scalp-action/test/fixture
+        run: scalp ci --pr-context internal --policy .scalp/policy.json --output .scalp/ci-report.json

@@ -69,23 +69,23 @@ runs:
         SCALP_PR_CONTEXT: ${{ inputs.pr-context }}
         SCALP_ALLOW_SCRIPTS: ${{ inputs.allow-scripts }}
       run: |
-        ARGS="ci"
+        ADDITIONAL_ARGS=()
 
         if [ -n "$SCALP_PM" ]; then
-          ARGS="$ARGS --pm $SCALP_PM"
+          ADDITIONAL_ARGS+=(--pm "$SCALP_PM")
         fi
-
-        ARGS="$ARGS --policy \"$SCALP_POLICY\""
-        ARGS="$ARGS --output \"$SCALP_OUTPUT\""
-        ARGS="$ARGS --pr-context $SCALP_PR_CONTEXT"
 
         if [ "$SCALP_ALLOW_SCRIPTS" = "true" ]; then
-          ARGS="$ARGS --allow-scripts"
+          ADDITIONAL_ARGS+=(--allow-scripts)
         fi
 
-        echo "Running: scalp $ARGS"
+        echo "Running: scalp ci --policy \"$SCALP_POLICY\" --output \"$SCALP_OUTPUT\" --pr-context $SCALP_PR_CONTEXT"
 
-        if scalp $ARGS; then
+        if scalp ci \
+          --policy "$SCALP_POLICY" \
+          --output "$SCALP_OUTPUT" \
+          --pr-context "$SCALP_PR_CONTEXT" \
+          "${ADDITIONAL_ARGS[@]}"; then
           echo "status=pass" >> "$GITHUB_OUTPUT"
           echo "report-path=$SCALP_OUTPUT" >> "$GITHUB_OUTPUT"
         else
