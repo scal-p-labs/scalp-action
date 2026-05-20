@@ -2,7 +2,7 @@
 set -euo pipefail
 
 VERSION="${1:-latest}"
-REPO="CarlosEduJs/SCAL-P"
+REPO="scal-p-labs/SCAL-P"
 
 detect_os_arch() {
   local os arch

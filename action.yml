@@ -1,6 +1,6 @@
 name: 'SCAL-P CI'
 description: 'Secure Chain Assurance Layer for Packages - enforce policy, hash dependencies, and audit your JavaScript project in CI'
-author: 'CarlosEduJs'
+author: 'scal-p-labs'
 branding:
   icon: 'shield'
   color: 'green'
