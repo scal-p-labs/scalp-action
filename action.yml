@@ -1,0 +1,95 @@
+name: 'SCAL-P CI'
+description: 'Secure Chain Assurance Layer for Packages - enforce policy, hash dependencies, and audit your JavaScript project in CI'
+author: 'CarlosEduJs'
+branding:
+  icon: 'shield'
+  color: 'green'
+
+inputs:
+  version:
+    description: 'Version of SCAL-P to use (e.g., v0.1.0, or "latest" for the latest release)'
+    required: false
+    default: 'latest'
+
+  pm:
+    description: 'Package manager (npm, pnpm, yarn, bun). Auto-detected from lockfile if not set.'
+    required: false
+    default: ''
+
+  policy:
+    description: 'Path to the policy file relative to working-directory'
+    required: false
+    default: '.scalp/policy.json'
+
+  output:
+    description: 'Path for the CI report output relative to working-directory'
+    required: false
+    default: '.scalp/ci-report.json'
+
+  pr-context:
+    description: 'PR context (fork or internal)'
+    required: false
+    default: 'fork'
+
+  allow-scripts:
+    description: 'Allow install scripts to run (internal PRs only)'
+    required: false
+    default: 'false'
+
+  working-directory:
+    description: 'Working directory relative to the repository root'
+    required: false
+    default: '.'
+
+outputs:
+  status:
+    description: 'CI run status (pass or fail)'
+    value: ${{ steps.run-ci.outputs.status }}
+  report-path:
+    description: 'Path to the generated CI report'
+    value: ${{ steps.run-ci.outputs.report-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install SCAL-P
+      shell: bash
+      run: ${{ github.action_path }}/scripts/install-scalp.sh ${{ inputs.version }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Run scalp ci
+      id: run-ci
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        SCALP_PM: ${{ inputs.pm }}
+        SCALP_POLICY: ${{ inputs.policy }}
+        SCALP_OUTPUT: ${{ inputs.output }}
+        SCALP_PR_CONTEXT: ${{ inputs.pr-context }}
+        SCALP_ALLOW_SCRIPTS: ${{ inputs.allow-scripts }}
+      run: |
+        ARGS="ci"
+
+        if [ -n "$SCALP_PM" ]; then
+          ARGS="$ARGS --pm $SCALP_PM"
+        fi
+
+        ARGS="$ARGS --policy \"$SCALP_POLICY\""
+        ARGS="$ARGS --output \"$SCALP_OUTPUT\""
+        ARGS="$ARGS --pr-context $SCALP_PR_CONTEXT"
+
+        if [ "$SCALP_ALLOW_SCRIPTS" = "true" ]; then
+          ARGS="$ARGS --allow-scripts"
+        fi
+
+        echo "Running: scalp $ARGS"
+
+        if scalp $ARGS; then
+          echo "status=pass" >> "$GITHUB_OUTPUT"
+          echo "report-path=$SCALP_OUTPUT" >> "$GITHUB_OUTPUT"
+        else
+          echo "status=fail" >> "$GITHUB_OUTPUT"
+          echo "report-path=$SCALP_OUTPUT" >> "$GITHUB_OUTPUT"
+          exit 1
+        fi
