@@ -1,88 +1,141 @@
 #!/usr/bin/env bash
+#
+# install-scalp.sh — Download and install SCAL-P binary securely
+#
+# Downloads from GitHub releases, verifies SHA-512 checksums,
+# extracts only the binary, and installs to a clean PATH directory.
+#
+# Usage: install-scalp.sh [version]
+
 set -euo pipefail
 
 VERSION="${1:-latest}"
-REPO="scal-p-labs/SCAL-P"
+REPO="CarlosEduJs/SCAL-P"
+PROJECT="scalp"
 
-detect_os_arch() {
+# ── Logging helpers (GitHub Actions annotations) ──────────────────────────
+info()  { echo "::notice:: $*"; }
+warn()  { echo "::warning:: $*"; }
+die()   { echo "::error:: $*" >&2; exit 1; }
+
+TMPDIR=""
+cleanup() { [ -n "$TMPDIR" ] && rm -rf "$TMPDIR"; }
+trap cleanup EXIT
+
+# ── Platform detection ────────────────────────────────────────────────────
+detect_platform() {
   local os arch
 
   os=$(uname -s | tr '[:upper:]' '[:lower:]')
-
   case "$os" in
-    mingw*|cygwin*|msys*)
-      os="windows"
-      ;;
-    linux|darwin)
-      ;;
-    *)
-      echo "Error: unsupported OS: $os"
-      exit 1
-      ;;
+    mingw*|cygwin*|msys*) os="windows" ;;
+    linux|darwin) ;;
+    *) die "unsupported OS: $os" ;;
   esac
 
   arch=$(uname -m)
-
   case "$arch" in
-    x86_64|amd64)
-      arch="amd64"
-      ;;
-    aarch64|arm64)
-      arch="arm64"
-      ;;
-    *)
-      echo "Error: unsupported architecture: $arch"
-      exit 1
-      ;;
+    x86_64|amd64) arch="amd64" ;;
+    aarch64|arm64) arch="arm64" ;;
+    *) die "unsupported architecture: $arch" ;;
   esac
 
-  echo "$os $arch"
+  printf '%s %s' "$os" "$arch"
 }
 
-resolve_latest_version() {
-  local token="${GH_TOKEN:-}"
-  local api_url="https://api.github.com/repos/$REPO/releases/latest"
+read -r OS ARCH <<< "$(detect_platform)"
+info "Platform: $OS/$ARCH"
 
-  if [ -n "$token" ]; then
-    curl -sL -H "Authorization: Bearer $token" "$api_url"
-  else
-    curl -sL "$api_url"
-  fi | grep '"tag_name"' | sed 's/.*"tag_name": "\(.*\)",/\1/'
-}
-
-read -r os arch <<< "$(detect_os_arch)"
-
+# ── Version resolution (redirect-based, no JSON parsing) ──────────────────
 if [ "$VERSION" = "latest" ]; then
-  echo "Resolving latest release..."
-  VERSION=$(resolve_latest_version)
-  if [ -z "$VERSION" ]; then
-    echo "Error: failed to resolve latest version"
-    exit 1
-  fi
-  echo "Latest release: $VERSION"
+  info "Resolving latest release..."
+  redirect=$(curl -sfL -o /dev/null -w '%{redirect_url}' \
+    "https://github.com/$REPO/releases/latest" 2>/dev/null) \
+    || die "failed to resolve latest version"
+  VERSION="${redirect##*/}"
+  [ -n "$VERSION" ] || die "failed to extract version from redirect"
+  info "Latest release: $VERSION"
 fi
 
-if [ "$os" = "windows" ]; then
+# ── Asset names ───────────────────────────────────────────────────────────
+if [ "$OS" = "windows" ]; then
   ext="zip"
-  asset="scalp_${VERSION}_${os}_${arch}.zip"
+  binary_ext=".exe"
 else
   ext="tar.gz"
-  asset="scalp_${VERSION}_${os}_${arch}.tar.gz"
+  binary_ext=""
 fi
+ASSET="${PROJECT}_${VERSION}_${OS}_${ARCH}.${ext}"
+BINARY="${PROJECT}${binary_ext}"
+BASE_URL="https://github.com/$REPO/releases/download/$VERSION"
 
-url="https://github.com/$REPO/releases/download/$VERSION/$asset"
+# ─── Download ─────────────────────────────────────────────────────────────
+TMPDIR=$(mktemp -d) || die "failed to create temp directory"
 
-tmpdir="/tmp/scalp-install"
-mkdir -p "$tmpdir"
+info "Downloading $ASSET ..."
+curl -fL -o "$TMPDIR/$ASSET" "$BASE_URL/$ASSET" \
+  || die "download failed (HTTP error)"
 
-echo "Downloading $asset..."
-curl -sL "$url" -o "$tmpdir/$asset"
+# ── Integrity: reject HTML (GitHub error pages) via magic bytes ───────────
+# gzip → 1f8b, zip → 504b
+magic=$(head -c 4 "$TMPDIR/$ASSET" | od -A n -t x1 | tr -d ' \n')
+case "$magic" in
+  1f8b*) ;;  # gzip (tar.gz)
+  504b*) ;;  # zip
+  *) die "downloaded file is not a valid archive (magic: ${magic:0:8})" ;;
+esac
 
-if [ "$ext" = "zip" ]; then
-  unzip -o "$tmpdir/$asset" -d "$tmpdir"
+# ── Checksum verification via SHA-512 ─────────────────────────────────────
+verify_sha512() {
+  local file="$1" expected="$2"
+  local computed=""
+
+  if   command -v sha512sum &>/dev/null; then
+    computed=$(sha512sum "$file" | awk '{print $1}')
+  elif command -v shasum &>/dev/null; then
+    computed=$(shasum -a 512 "$file" | awk '{print $1}')
+  elif command -v openssl &>/dev/null; then
+    computed=$(openssl dgst -sha512 "$file" | awk '{print $NF}')
+  else
+    warn "no SHA-512 tool available; skipping checksum verification"
+    return 0
+  fi
+
+  if [ "$computed" != "$expected" ]; then
+    die "checksum mismatch: expected $expected, got $computed"
+  fi
+  info "Checksum verified"
+}
+
+if curl -fL -o "$TMPDIR/checksums.txt" "$BASE_URL/checksums.txt" 2>/dev/null; then
+  expected=$(awk -v asset="$ASSET" '$2 == asset { print $1 }' "$TMPDIR/checksums.txt")
+  if [ -n "$expected" ]; then
+    verify_sha512 "$TMPDIR/$ASSET" "$expected"
+  else
+    warn "checksums.txt has no entry for $ASSET; skipping"
+  fi
 else
-  tar xzf "$tmpdir/$asset" -C "$tmpdir"
+  info "checksums.txt not available for this release; skipping verification"
 fi
 
-echo "$tmpdir" >> "$GITHUB_PATH"
-echo "SCAL-P $VERSION installed successfully ($os/$arch)"
+# ── Extract ───────────────────────────────────────────────────────────────
+info "Extracting ..."
+mkdir -p "$TMPDIR/extract"
+case "$ext" in
+  zip) unzip -o "$TMPDIR/$ASSET" -d "$TMPDIR/extract" >/dev/null ;;
+  *)   tar xzf "$TMPDIR/$ASSET" -C "$TMPDIR/extract" ;;
+esac
+
+# ── Install binary only ──────────────────────────────────────────────────
+BIN_PATH=$(find "$TMPDIR/extract" -name "$BINARY" -type f | head -1)
+[ -n "$BIN_PATH" ] || die "binary '$BINARY' not found in archive"
+
+INSTALL_DIR="${HOME}/.local/bin"
+mkdir -p "$INSTALL_DIR"
+install -m 755 "$BIN_PATH" "$INSTALL_DIR/$BINARY"
+
+if [ -n "${GITHUB_PATH:-}" ]; then
+  echo "$INSTALL_DIR" >> "$GITHUB_PATH"
+fi
+
+info "$PROJECT $VERSION installed to $INSTALL_DIR/$BINARY ($OS/$ARCH)"
