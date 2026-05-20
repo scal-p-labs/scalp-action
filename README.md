@@ -84,7 +84,7 @@ jobs:
 ## How it works
 
 1. The action detects the runner OS and architecture (linux/macos/windows × amd64/arm64)
-2. Downloads the matching `scalp` binary from the [SCAL-P releases](https://github.com/scal-p-labsSCAL-P/releases)
+2. Downloads the matching `scalp` binary from the [SCAL-P releases](https://github.com/scal-p-labs/SCAL-P/releases)
 3. Runs `scalp ci` with the provided inputs
 4. Exits with the same status as `scalp ci` — fail on policy violations or hash mismatches
 
