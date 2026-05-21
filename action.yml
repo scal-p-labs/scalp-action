@@ -94,17 +94,30 @@ runs:
 
         echo "Running: scalp ci --policy \"$SCALP_POLICY\" --output \"$SCALP_OUTPUT\" --pr-context $SCALP_PR_CONTEXT${SCALP_SARIF:+ --sarif \"$SCALP_SARIF\"}"
 
+        resolve_abs() {
+          case "$1" in
+            /*) echo "$1" ;;
+            *) echo "$(pwd)/$1" ;;
+          esac
+        }
+
+        ABS_OUTPUT=$(resolve_abs "$SCALP_OUTPUT")
+        ABS_SARIF=""
+        if [ -n "$SCALP_SARIF" ]; then
+          ABS_SARIF=$(resolve_abs "$SCALP_SARIF")
+        fi
+
         if scalp ci \
           --policy "$SCALP_POLICY" \
           --output "$SCALP_OUTPUT" \
           --pr-context "$SCALP_PR_CONTEXT" \
           "${ADDITIONAL_ARGS[@]}"; then
           echo "status=pass" >> "$GITHUB_OUTPUT"
-          echo "report-path=$SCALP_OUTPUT" >> "$GITHUB_OUTPUT"
-          echo "sarif-path=$SCALP_SARIF" >> "$GITHUB_OUTPUT"
+          echo "report-path=$ABS_OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "sarif-path=$ABS_SARIF" >> "$GITHUB_OUTPUT"
         else
           echo "status=fail" >> "$GITHUB_OUTPUT"
-          echo "report-path=$SCALP_OUTPUT" >> "$GITHUB_OUTPUT"
-          echo "sarif-path=$SCALP_SARIF" >> "$GITHUB_OUTPUT"
+          echo "report-path=$ABS_OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "sarif-path=$ABS_SARIF" >> "$GITHUB_OUTPUT"
           exit 1
         fi
