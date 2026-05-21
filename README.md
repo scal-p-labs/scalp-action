@@ -58,7 +58,22 @@ jobs:
     path: ${{ steps.scalp.outputs.report-path }}
 ```
 
+### With SARIF and Code Scanning
+
+```yaml
+- uses: scal-p-labs/scalp-action@<SHA_COMMIT>
+  id: scalp
+  with:
+    sarif: .scalp/results.sarif
+
+- uses: github/codeql-action/upload-sarif@<SHA_COMMIT>
+  with:
+    sarif_file: ${{ steps.scalp.outputs.sarif-path }}
+```
+
 ---
+
+
 
 ## Inputs
 
@@ -68,6 +83,7 @@ jobs:
 | `pm` | auto-detect | Package manager: `npm`, `pnpm`, `yarn`, `bun` |
 | `policy` | `.scalp/policy.json` | Path to the policy file |
 | `output` | `.scalp/ci-report.json` | Path for the CI report |
+| `sarif` | (none) | Path for the SARIF report (e.g. `.scalp/results.sarif`) |
 | `pr-context` | `fork` | PR context — `fork` (blocks scripts, enforces hash) or `internal` |
 | `allow-scripts` | `false` | Allow install scripts (`internal` PRs only) |
 | `working-directory` | `.` | Working directory relative to the repository root |
@@ -78,6 +94,7 @@ jobs:
 |--------|-------------|
 | `status` | CI run result: `pass` or `fail` |
 | `report-path` | Absolute path to the generated JSON report |
+| `sarif-path` | Absolute path to the generated SARIF report (if `sarif` input is set) |
 
 ---
 

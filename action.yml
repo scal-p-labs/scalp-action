@@ -36,6 +36,11 @@ inputs:
     required: false
     default: 'false'
 
+  sarif:
+    description: 'Path for the SARIF report output relative to working-directory'
+    required: false
+    default: ''
+
   working-directory:
     description: 'Working directory relative to the repository root'
     required: false
@@ -48,6 +53,9 @@ outputs:
   report-path:
     description: 'Path to the generated CI report'
     value: ${{ steps.run-ci.outputs.report-path }}
+  sarif-path:
+    description: 'Path to the generated SARIF report'
+    value: ${{ steps.run-ci.outputs.sarif-path }}
 
 runs:
   using: 'composite'
@@ -68,6 +76,7 @@ runs:
         SCALP_OUTPUT: ${{ inputs.output }}
         SCALP_PR_CONTEXT: ${{ inputs.pr-context }}
         SCALP_ALLOW_SCRIPTS: ${{ inputs.allow-scripts }}
+        SCALP_SARIF: ${{ inputs.sarif }}
       run: |
         ADDITIONAL_ARGS=()
 
@@ -79,7 +88,11 @@ runs:
           ADDITIONAL_ARGS+=(--allow-scripts)
         fi
 
-        echo "Running: scalp ci --policy \"$SCALP_POLICY\" --output \"$SCALP_OUTPUT\" --pr-context $SCALP_PR_CONTEXT"
+        if [ -n "$SCALP_SARIF" ]; then
+          ADDITIONAL_ARGS+=(--sarif "$SCALP_SARIF")
+        fi
+
+        echo "Running: scalp ci --policy \"$SCALP_POLICY\" --output \"$SCALP_OUTPUT\" --pr-context $SCALP_PR_CONTEXT${SCALP_SARIF:+ --sarif \"$SCALP_SARIF\"}"
 
         if scalp ci \
           --policy "$SCALP_POLICY" \
@@ -88,8 +101,10 @@ runs:
           "${ADDITIONAL_ARGS[@]}"; then
           echo "status=pass" >> "$GITHUB_OUTPUT"
           echo "report-path=$SCALP_OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "sarif-path=$SCALP_SARIF" >> "$GITHUB_OUTPUT"
         else
           echo "status=fail" >> "$GITHUB_OUTPUT"
           echo "report-path=$SCALP_OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "sarif-path=$SCALP_SARIF" >> "$GITHUB_OUTPUT"
           exit 1
         fi

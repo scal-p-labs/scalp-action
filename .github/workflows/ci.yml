@@ -21,6 +21,9 @@ jobs:
   integration:
     runs-on: ubuntu-latest
     needs: validate
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -46,4 +49,22 @@ jobs:
         run: npm install --package-lock-only
       - name: Run scalp ci on test fixture
         working-directory: scalp-action/test/fixture
-        run: scalp ci --pr-context internal --policy .scalp/policy.json --output .scalp/ci-report.json
+        run: |
+          scalp ci \
+            --pr-context internal \
+            --policy .scalp/policy.json \
+            --output .scalp/ci-report.json \
+            --sarif .scalp/scalp-report.sarif
+      - name: Upload SARIF to Code Scanning
+        if: always() && github.event.pull_request.head.repo.fork == false
+        uses: github/codeql-action/upload-sarif@f25eda876ebb741d872b63b9f2c6dfdd77f14b83 # v4.35.5
+        with:
+          sarif_file: scalp-action/test/fixture/.scalp/scalp-report.sarif
+      - name: Upload reports as artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: scalp-reports
+          path: |
+            scalp-action/test/fixture/.scalp/ci-report.json
+            scalp-action/test/fixture/.scalp/scalp-report.sarif
