@@ -1,5 +1,7 @@
 # scalp-action — SCAL-P GitHub Action
 
+![logo](https://raw.githubusercontent.com/scal-p-labs/assets/main/banner.png)
+
 > Run [SCAL-P](https://github.com/scal-p-labs/SCAL-P) CI in your GitHub workflows —
 > enforce policy, verify dependency hashes, and audit your JavaScript project with zero config.
 
