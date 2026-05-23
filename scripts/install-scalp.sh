@@ -3,7 +3,8 @@
 # install-scalp.sh — Download and install SCAL-P binary securely
 #
 # Downloads from GitHub releases, verifies SHA-512 checksums,
-# extracts only the binary, and installs to a clean PATH directory.
+# verifies GitHub Artifact Attestation (Sigstore), extracts only
+# the binary, and installs to a clean PATH directory.
 #
 # Usage: install-scalp.sh [version]
 
@@ -116,7 +117,21 @@ if curl -fL -o "$TMPDIR/checksums.txt" "$BASE_URL/checksums.txt" 2>/dev/null; th
     warn "checksums.txt has no entry for $ASSET; skipping"
   fi
 else
-  info "checksums.txt not available for this release; skipping verification"
+  warn "checksums.txt not available for this release; skipping verification"
+fi
+
+# ── Artifact Attestation verification (Sigstore) ───────────────────────────
+# When running on GitHub Actions with GH_TOKEN, verify the binary was built
+# by the official SCAL-P CI pipeline.  This is a defence-in-depth layer on
+# top of SHA-512 checksums.
+if [ -n "${GH_TOKEN:-}" ] && command -v gh &>/dev/null; then
+  if gh attestation verify "$TMPDIR/$ASSET" --repo "$REPO" &>/dev/null; then
+    info "Artifact attestation verified (Sigstore)"
+  else
+    warn "Artifact attestation verification failed"
+  fi
+else
+  info "gh CLI not available; skipping artifact attestation verification"
 fi
 
 # ── Extract ───────────────────────────────────────────────────────────────
