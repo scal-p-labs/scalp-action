@@ -89,6 +89,9 @@ jobs:
 | `pr-context` | `fork` | PR context — `fork` (blocks scripts, enforces hash) or `internal` |
 | `allow-scripts` | `false` | Allow install scripts (`internal` PRs only) |
 | `working-directory` | `.` | Working directory relative to the repository root |
+| `enforcement` | `block` | Enforcement mode — `block` (fail on violations), `warn`, or `log` |
+| `checksum` | (none) | Expected SHA-512 checksum for the lockfile (format: `sha512-<base64>`) |
+| `debug` | `false` | Enable debug-level logging |
 
 ## Outputs
 
