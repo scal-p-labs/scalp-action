@@ -9,7 +9,7 @@ inputs:
   version:
     description: 'Version of SCAL-P to use (e.g., v0.1.0, or "latest" for the latest release)'
     required: false
-    default: 'latest'
+    default: 'v0.3.1-beta.7'
 
   pm:
     description: 'Package manager (npm, pnpm, yarn, bun). Auto-detected from lockfile if not set.'
