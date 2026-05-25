@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-VERSION="${1:-v0.3.1-beta.7}"
+VERSION="${1:-v0.3.2-beta.8}"
 REPO="scal-p-labs/SCAL-P"
 PROJECT="scalp"
 
