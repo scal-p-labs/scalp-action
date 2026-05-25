@@ -46,6 +46,21 @@ inputs:
     required: false
     default: '.'
 
+  enforcement:
+    description: 'Enforcement mode for violations (block, warn, or log)'
+    required: false
+    default: 'block'
+
+  checksum:
+    description: 'Expected SHA-512 checksum for the lockfile (format: sha512-<base64>)'
+    required: false
+    default: ''
+
+  debug:
+    description: 'Enable debug-level logging'
+    required: false
+    default: 'false'
+
 outputs:
   status:
     description: 'CI run status (pass or fail)'
@@ -77,6 +92,9 @@ runs:
         SCALP_PR_CONTEXT: ${{ inputs.pr-context }}
         SCALP_ALLOW_SCRIPTS: ${{ inputs.allow-scripts }}
         SCALP_SARIF: ${{ inputs.sarif }}
+        SCALP_ENFORCEMENT: ${{ inputs.enforcement }}
+        SCALP_CHECKSUM: ${{ inputs.checksum }}
+        SCALP_DEBUG: ${{ inputs.debug }}
       run: |
         ADDITIONAL_ARGS=()
 
@@ -92,7 +110,19 @@ runs:
           ADDITIONAL_ARGS+=(--sarif "$SCALP_SARIF")
         fi
 
-        echo "Running: scalp ci --policy \"$SCALP_POLICY\" --output \"$SCALP_OUTPUT\" --pr-context $SCALP_PR_CONTEXT${SCALP_SARIF:+ --sarif \"$SCALP_SARIF\"}"
+        if [ -n "$SCALP_ENFORCEMENT" ]; then
+          ADDITIONAL_ARGS+=(--enforcement "$SCALP_ENFORCEMENT")
+        fi
+
+        if [ -n "$SCALP_CHECKSUM" ]; then
+          ADDITIONAL_ARGS+=(--checksum "$SCALP_CHECKSUM")
+        fi
+
+        if [ "$SCALP_DEBUG" = "true" ]; then
+          ADDITIONAL_ARGS+=(--debug)
+        fi
+
+        echo "Running: scalp ci --policy \"$SCALP_POLICY\" --output \"$SCALP_OUTPUT\" --pr-context $SCALP_PR_CONTEXT${SCALP_SARIF:+ --sarif \"$SCALP_SARIF\"}${SCALP_ENFORCEMENT:+ --enforcement \"$SCALP_ENFORCEMENT\"}${SCALP_CHECKSUM:+ --checksum \"$SCALP_CHECKSUM\"}${SCALP_DEBUG:+ --debug}"
 
         resolve_abs() {
           case "$1" in
